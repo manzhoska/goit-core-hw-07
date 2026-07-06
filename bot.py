@@ -12,12 +12,12 @@ class Field:
 class Birthday(Field):
     def __init__(self, value = None):
         if value is None: 
-            super().__init__(value)
+            super().__init__(date_value)
+            return
         else: 
             try:
-                date_value = datetime.strptime(value, '%d.%m.%Y').date()
-                date_value = value
-                super().__init__(date_value)
+                datetime.strptime(value, "%d.%m.%Y")
+                super().__init__(value)
                 
             except ValueError:
                 raise ValueError("Invalid date format. Use DD.MM.YYYY")
@@ -50,7 +50,7 @@ class Record:
     def __init__(self, name, birthday = None):
         self.name = Name(name)
         self.phones = []
-        self.birthday = Birthday(birthday)
+        self.birthday = Birthday(birthday) if birthday else None    
 
     # pretty representation of Record object data
     def __str__(self):
@@ -92,8 +92,8 @@ class Record:
 
 class AddressBook(UserDict):
     def __str__(self):
-        return f"AddressBook with records: \n{'\n'.join(str(value) for key, value in self.data.items())}"
-
+        return "AddressBook with records:\n" + "\n".join(str(value) for value in self.data.values())
+    
     # Adding Record object to the AddressBook dictionary
     def add_record(self, user: object) -> str:
         name = user.name.value
@@ -103,6 +103,7 @@ class AddressBook(UserDict):
           
     # Search Record object by name in the AddressBook dictionary
     def find(self, name: str) -> object:
+        
         return self.data.get(name)
 
 
@@ -141,6 +142,8 @@ class AddressBook(UserDict):
 
         # Adjust the birthday year to the current year for comparison
         for record in book.data.values():
+            if record.birthday is None:
+                continue
             dt = datetime.strptime(record.birthday.value, "%d.%m.%Y").date()
             if dt is None:
                 continue
@@ -152,10 +155,10 @@ class AddressBook(UserDict):
 
                 if 0 <= (birthday_this_year - today).days <= days:
                     upcoming_birthday = self.adjust_for_weekend(birthday_this_year)
-            congrats_list.append({
-            'name' : record.name.value,
-            'birthday' :self.date_to_string(upcoming_birthday)
-            })
+                    congrats_list.append({
+                    'name' : record.name.value,
+                    'birthday' :self.date_to_string(upcoming_birthday)
+                    })
         
         return congrats_list
 
@@ -172,6 +175,9 @@ def input_error(func):
                 return "Give me a valid value."
             except IndexError:
                 return "Enter a valid value."
+            except AttributeError:
+                return "Contact not found."
+            
     return inner
 
 
@@ -199,17 +205,15 @@ def add_contact(args, book):
 def change_contact(args, book):
     name, old_phone, new_phone = args
     rec = book.find(name)
-    if rec is None:
-        return "Contact not found."
-    else:
-        rec.edit_phone(old_phone, new_phone)
+    rec.edit_phone(old_phone, new_phone)
     return "Contact updated."
 
 @input_error
 def show_phone(args, book):
     name = args[0]
     record = book.find(name)
-    return f"{'\n'.join(phone.value for phone in record.phones)}"
+    records = '\n'.join(phone.value for phone in record.phones)
+    return f"{records}"
 
 def show_all(book):
     return book
@@ -218,8 +222,6 @@ def show_all(book):
 @input_error
 def add_birthday(args, book):
     name, birth_date, *_ = args
-    if book.find(name) is None:
-        return "Contact not found."
     record = book.find(name)
     record.add_birthday(birth_date)
     return "Birthday added."
@@ -229,21 +231,22 @@ def show_birthday(args, book):
     name = args[0]
     record = book.find(name)
 
-    if book.find(name) == None:
-        return "Contact not found."
-    
-    if record.birthday.value is None:
+    if record.birthday is None:
         return "Birthday is not set."
     
     return record.birthday.value
 
 @input_error
 def birthdays(args, book):
-    for record in book.data.values():
-        if record.birthday.value is None:
-            continue
-        return book.get_upcoming_birthdays(book)
+    birthdays = book.get_upcoming_birthdays(book)
 
+    if not birthdays:
+        return "No upcoming birthdays."
+
+    return "\n".join(
+        f"{item['name']}: {item['birthday']}"
+        for item in birthdays
+    )
 
 
 
