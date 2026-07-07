@@ -12,7 +12,7 @@ class Field:
 class Birthday(Field):
     def __init__(self, value = None):
         if value is None: 
-            super().__init__(date_value)
+            super().__init__(value)
             return
         else: 
             try:
