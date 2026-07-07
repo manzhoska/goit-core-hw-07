@@ -74,6 +74,7 @@ class Record:
     # Change phone number to the new one keeping rest of applicable numbers as is
     def edit_phone(self, old_phone: str, new_phone: str) -> True:
         found_phone = self.find_phone(old_phone)
+        check_phone = Phone(new_phone)
         self.remove_phone(old_phone)
         self.add_phone(new_phone)
         return True
